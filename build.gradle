@@ -16,6 +16,17 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
 }
 
+// 确保所有任务使用UTF-8编码
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+}
+tasks.withType(ProcessResources).configureEach {
+    filteringCharset = 'UTF-8'
+}
+
 minecraft {
     // The mappings can be changed at any time and must be in the following format.
     // Channel:   Version:
@@ -64,6 +75,9 @@ minecraft {
         // applies to all the run configs below
         configureEach {
             workingDirectory project.file('run')
+
+            // 解决控制台乱码问题
+            jvmArgs '-Dfile.encoding=UTF-8', '-Dsun.stdout.encoding=UTF-8', '-Dsun.stderr.encoding=UTF-8'
 
             // Recommended logging data for a userdev environment
             // The markers can be added/remove as needed separated by commas.
@@ -143,6 +157,12 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
+    // 添加java-websocket依赖，用于WebSocket通信
+    implementation 'org.java-websocket:Java-WebSocket:1.6.0'
+    
+    // 添加Gson依赖，用于JSON序列化和反序列化
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
     // Hack fix for now, force jopt-simple to be exactly 5.0.4 because Mojang ships that version, but some transtive dependencies request 6.0+
     implementation('net.sf.jopt-simple:jopt-simple:5.0.4') { version { strictly '5.0.4' } }
 }
