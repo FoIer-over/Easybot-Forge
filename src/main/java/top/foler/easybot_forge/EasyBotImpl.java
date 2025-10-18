@@ -1,23 +1,20 @@
 package top.foler.easybot_forge;
 
 import com.mojang.brigadier.ParseResults;
+import com.mojang.logging.LogUtils;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
+import org.slf4j.Logger;
 import top.foler.easybot_forge.bridge.BridgeBehavior;
 import top.foler.easybot_forge.bridge.ClientProfile;
-import java.util.ArrayList;
-import java.lang.reflect.Method;
-import java.lang.reflect.InvocationTargetException;
 import top.foler.easybot_forge.bridge.message.Segment;
 import top.foler.easybot_forge.bridge.model.PlayerInfo;
 import top.foler.easybot_forge.bridge.model.ServerInfo;
-
-import java.util.ArrayList;
-import java.util.List;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-import top.foler.easybot_forge.Config;
 
 public class EasyBotImpl implements BridgeBehavior {
     private final Logger logger = LogUtils.getLogger();
@@ -50,44 +47,74 @@ public class EasyBotImpl implements BridgeBehavior {
             return "无法执行命令: 服务器未安装PlaceholderApi!";
         }
 
-        // 在Forge中执行命令 - 捕获输出结果
         try {
-            // 创建一个自定义的命令输出接收器
-            List<String> messages = new ArrayList<>();
+            // 记录执行的命令
+            logger.info("执行命令: player={}, command={}, enablePapi={}", playerName, command, enablePapi);
             
-            // 使用反射尝试模拟Bukkit版本的行为
-            try {
-                // 尝试通过反射调用runCommand方法，如果服务器支持的话
-                Method runCommandMethod = server.getClass().getMethod("runCommand", String.class);
-                Object result = runCommandMethod.invoke(server, command);
-                if (result instanceof String) {
-                    return (String) result;
-                }
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
-                // 忽略反射错误，继续尝试其他方法
+            // 如果启用了PAPI，尝试替换命令中的占位符
+            if (enablePapi) {
+                command = papiQuery(playerName, command);
             }
             
-            // 获取命令管理器和命令执行源
-            net.minecraft.commands.Commands commands = server.getCommands();
-            net.minecraft.commands.CommandSourceStack source = server.createCommandSourceStack();
+            // 对于特殊命令，提供自定义输出
+            if (command.trim().equalsIgnoreCase("list") || command.trim().startsWith("list")) {
+                StringBuilder playerList = new StringBuilder();
+                playerList.append("在线玩家: ");
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    playerList.append(player.getGameProfile().getName()).append(", ");
+                }
+                if (playerList.length() > 5) {
+                    playerList.setLength(playerList.length() - 2);
+                }
+                playerList.append(" (").append(getOnlinePlayerCount()).append("/").append(getMaxPlayers()).append(")");
+                return playerList.toString();
+            } else if (command.trim().equalsIgnoreCase("version") || command.trim().startsWith("version")) {
+                return "服务器版本: " + server.getServerVersion();
+            }
             
-            // 解析命令
-            ParseResults<net.minecraft.commands.CommandSourceStack> parseResults =
-                commands.getDispatcher().parse(command, source);
+            // 在Forge中执行命令 - 捕获输出结果
+            try {
+                // 创建一个自定义的命令输出接收器
+                List<String> messages = new ArrayList<>();
+                
+                // 使用反射尝试模拟Bukkit版本的行为
+                try {
+                    // 尝试通过反射调用runCommand方法，如果服务器支持的话
+                    Method runCommandMethod = server.getClass().getMethod("runCommand", String.class);
+                    Object result = runCommandMethod.invoke(server, command);
+                    if (result instanceof String) {
+                        return (String) result;
+                    }
+                } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+                    // 忽略反射错误，继续尝试其他方法
+                }
+                
+                // 获取命令管理器和命令执行源
+                net.minecraft.commands.Commands commands = server.getCommands();
+                net.minecraft.commands.CommandSourceStack source = server.createCommandSourceStack();
+                
+                // 解析命令
+                ParseResults<net.minecraft.commands.CommandSourceStack> parseResults = 
+                    commands.getDispatcher().parse(command, source);
+                
+                // 执行命令
+                commands.performCommand(parseResults, command);
+                
+                // 由于无法直接捕获输出，我们尝试从日志中获取或返回通用信息
+                // 这里我们可以添加更复杂的日志解析逻辑，但为了简单起见，先返回基本信息
+                logger.info("命令已执行: {}", command);
+                return "命令执行成功: " + command;
+            } catch (Exception e) {
+                logger.warn("执行命令时出错: " + e.getMessage());
+                return "执行命令时出错: " + e.getMessage();
+            }
             
-            // 执行命令
-            commands.performCommand(parseResults, command);
-            
-            // 由于无法直接捕获输出，我们尝试从日志中获取或返回通用信息
-            // 这里我们可以添加更复杂的日志解析逻辑，但为了简单起见，先返回基本信息
-            logger.info("命令已执行: {}", command);
-            return "命令执行成功: " + command;
         } catch (Exception e) {
-            logger.warn("执行命令时出错: " + e.getMessage());
-            return "执行命令时出错: " + e.getMessage();
+            logger.error("命令执行异常: " + e.getMessage(), e);
+            return "执行命令失败: " + e.getMessage();
         }
     }
-
+    
     @Override
     public String papiQuery(String playerName, String query) {
         // 检查是否支持PlaceholderAPI功能
@@ -194,7 +221,7 @@ public class EasyBotImpl implements BridgeBehavior {
 
             // 执行绑定成功后的命令
             // 从Config中获取绑定成功后要执行的命令
-            List<String> commands = Config.eventBindSuccess;
+            List<String> commands = Config.getEventBindSuccess();
             if (commands == null || commands.isEmpty()) {
                 // 如果配置中没有命令，使用默认的命令列表
                 commands = new ArrayList<>();
@@ -417,15 +444,16 @@ public class EasyBotImpl implements BridgeBehavior {
     public List<PlayerInfo> getPlayerList() {
         List<PlayerInfo> players = new ArrayList<>();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            PlayerInfo info = new PlayerInfo();
-            info.setPlayerName(player.getGameProfile().getName());
-            info.setPlayerUuid(player.getUUID().toString());
+            // 获取玩家基本信息
+            String playerName = player.getGameProfile().getName();
+            String playerUuid = player.getUUID().toString();
             
             // 获取玩家IP地址
+            String ipAddress = "unknown";
             try {
                 // 在Forge中通过Player.connection获取IP地址
                 if (player.connection != null) {
-                    String ipAddress = player.connection.getConnection().getRemoteAddress().toString();
+                    ipAddress = player.connection.getConnection().getRemoteAddress().toString();
                     // 移除端口号部分
                     if (ipAddress.contains(":")) {
                         ipAddress = ipAddress.substring(0, ipAddress.lastIndexOf(":"));
@@ -434,37 +462,28 @@ public class EasyBotImpl implements BridgeBehavior {
                     if (ipAddress.startsWith("/")) {
                         ipAddress = ipAddress.substring(1);
                     }
-                    info.setIp(ipAddress);
                 }
             } catch (Exception e) {
                 logger.warn("获取玩家IP地址时出错: " + e.getMessage());
-                info.setIp("unknown");
             }
             
-            // 尝试设置皮肤URL
+            // 检测是否为基岩版玩家
+            boolean isBedrockPlayer = false;
             try {
-                // 使用Mojang的皮肤API
-                String uuid = player.getUUID().toString().replace("-", "");
-                String skinUrl = "https://crafatar.com/skins/" + uuid;
-                info.setSkinUrl(skinUrl);
-            } catch (Exception e) {
-                logger.warn("设置玩家皮肤URL时出错: " + e.getMessage());
-            }
-            
-            // 检测是否为基岩版玩家（通过Geyser）
-            try {
-                // 这里是一个简单的检测方法，实际项目中可能需要根据Geyser的API进行调整
                 // 检查是否存在Geyser相关的标签或元数据
-                boolean isBedrock = false;
-                // 尝试通过NBT数据或其他方式检测
-                // 例如: isBedrock = player.getTags().contains("geyser_bedrock_player");
-                // 或者检查是否有特殊的GameProfile属性
-                info.setBedrock(isBedrock);
+                // 实际项目中可能需要根据Geyser的API进行调整
+                // 1. 检查玩家标签
+                if (player.getTags().contains("geyser_bedrock_player")) {
+                    isBedrockPlayer = true;
+                }
+                // 2. 检查GameProfile属性（如果Geyser设置了相关属性）
+                // 3. 检查连接类型或其他标识
             } catch (Exception e) {
                 logger.warn("检测基岩版玩家时出错: " + e.getMessage());
-                info.setBedrock(false);
             }
             
+            // 创建玩家信息对象
+            PlayerInfo info = new PlayerInfo(playerName, playerUuid, ipAddress, isBedrockPlayer);
             players.add(info);
         }
         return players;

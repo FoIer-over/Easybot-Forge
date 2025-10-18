@@ -45,7 +45,7 @@ public class EasyBotEventListener {
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
         server = event.getServer();
-        if (Config.debug) {
+        if (Config.isDebug()) {
             logger.info("EasyBot事件监听器已初始化");
         }
     }

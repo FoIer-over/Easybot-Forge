@@ -1,5 +1,8 @@
 package top.foler.easybot_forge.bridge;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ClientProfile {
     private static String pluginVersion;
     private static String serverDescription;
@@ -12,6 +15,12 @@ public class ClientProfile {
     private static boolean hasPaperSkinApi = false;
     private static boolean syncMessageMoney = false;
     private static String syncMessageMode = "all";
+    
+    // 假人过滤相关配置
+    private static boolean botFilterEnabled = false;
+    private static List<String> botPrefixes = new ArrayList<>();
+    private static boolean carpetBotFilterEnabled = false;
+    private static List<String> carpetBotPrefixes = new ArrayList<>();
 
     public static String getPluginVersion() {
         return pluginVersion;
@@ -99,5 +108,66 @@ public class ClientProfile {
 
     public static void setSyncMessageMode(String syncMessageMode) {
         ClientProfile.syncMessageMode = syncMessageMode;
+    }
+    
+    // 假人过滤相关方法
+    public static boolean isBotFilterEnabled() {
+        return botFilterEnabled;
+    }
+
+    public static void setBotFilterEnabled(boolean botFilterEnabled) {
+        ClientProfile.botFilterEnabled = botFilterEnabled;
+    }
+
+    public static List<String> getBotPrefixes() {
+        return botPrefixes;
+    }
+
+    public static void setBotPrefixes(List<String> botPrefixes) {
+        ClientProfile.botPrefixes = botPrefixes;
+    }
+
+    public static boolean isCarpetBotFilterEnabled() {
+        return carpetBotFilterEnabled;
+    }
+
+    public static void setCarpetBotFilterEnabled(boolean carpetBotFilterEnabled) {
+        ClientProfile.carpetBotFilterEnabled = carpetBotFilterEnabled;
+    }
+
+    public static List<String> getCarpetBotPrefixes() {
+        return carpetBotPrefixes;
+    }
+
+    public static void setCarpetBotPrefixes(List<String> carpetBotPrefixes) {
+        ClientProfile.carpetBotPrefixes = carpetBotPrefixes;
+    }
+    
+    // 检查玩家是否为假人
+    public static boolean isBot(String playerName) {
+        if (!botFilterEnabled) {
+            return false;
+        }
+        
+        for (String prefix : botPrefixes) {
+            if (playerName.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // 检查玩家是否为Carpet假人
+    public static boolean isCarpetBot(String playerName) {
+        if (!carpetBotFilterEnabled) {
+            return false;
+        }
+        
+        for (String prefix : carpetBotPrefixes) {
+            if (playerName.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

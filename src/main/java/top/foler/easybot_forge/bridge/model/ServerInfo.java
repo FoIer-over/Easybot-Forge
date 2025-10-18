@@ -1,12 +1,21 @@
 package top.foler.easybot_forge.bridge.model;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ServerInfo {
+    @SerializedName("server_name")
     private String serverName = "Unknown";
+    @SerializedName("plugin_version")
     private String pluginVersion = "1.0.0";
+    @SerializedName("server_version")
     private String serverVersion = "Unknown";
+    @SerializedName("is_command_supported")
     private boolean commandSupported = true;
+    @SerializedName("is_papi_supported")
     private boolean papiSupported = false;
+    @SerializedName("has_geyser")
     private boolean hasGeyser = false;
+    @SerializedName("is_online_mode")
     private boolean onlineMode = false;
 
     public String getServerName() {

@@ -367,6 +367,9 @@ public class BridgeClient {
                     JsonObject playerObj = new JsonObject();
                     playerObj.addProperty("player_name", playerInfo.getPlayerName());
                     playerObj.addProperty("player_uuid", playerInfo.getPlayerUuid());
+                    playerObj.addProperty("ip", playerInfo.getIp());
+                    playerObj.addProperty("skin_url", playerInfo.getSkinUrl());
+                    playerObj.addProperty("is_bedrock_player", playerInfo.isBedrock());
                     playerArray.add(playerObj);
                 }
                 callBack.add("list", playerArray);
