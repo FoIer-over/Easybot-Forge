@@ -51,26 +51,6 @@ public class CommandHandler {
                         .then(Commands.literal("list")
                                 .executes(this::listBotPrefixes)))
                 .executes(this::showHelp));
-
-        // 简化命令
-        dispatcher.register(Commands.literal("bind")
-                .executes(this::bind));
-
-        dispatcher.register(Commands.literal("say")
-                .then(Commands.argument("message", StringArgumentType.greedyString())
-                        .executes(this::say)));
-
-        dispatcher.register(Commands.literal("esay")
-                .then(Commands.argument("message", StringArgumentType.greedyString())
-                        .executes(this::say)));
-
-        dispatcher.register(Commands.literal("ssay")
-                .then(Commands.argument("message", StringArgumentType.greedyString())
-                        .executes(this::crossServerSay)));
-
-        dispatcher.register(Commands.literal("essay")
-                .then(Commands.argument("message", StringArgumentType.greedyString())
-                        .executes(this::crossServerSay)));
     }
 
     private int showHelp(CommandContext<CommandSourceStack> context) {
@@ -341,12 +321,8 @@ public class CommandHandler {
                     packet.setMessage(message);
                     packet.setUseCommand(true);
                     
-                    // 发送数据包并处理返回的Future
-                    client.sendAndWaitForCallbackAsync(packet, com.google.gson.JsonObject.class)
-                        .exceptionally(ex -> {
-                            Easybot_forge.getStaticLogger().error("处理回调时出错", ex);
-                            return null; // 返回null以避免异常传播
-                        });
+                    // 发送数据包
+                    client.sendAndWaitForCallbackAsync(packet, com.google.gson.JsonObject.class);
                 } else {
                     // 控制台发送消息的逻辑
                     Easybot_forge.getStaticLogger().info("控制台发送消息: {}", message);
@@ -364,12 +340,7 @@ public class CommandHandler {
                     packet.setMessage(message);
                     packet.setUseCommand(true);
                     
-                    // 发送数据包并处理返回的Future
-                    client.sendAndWaitForCallbackAsync(packet, com.google.gson.JsonObject.class)
-                        .exceptionally(ex -> {
-                            Easybot_forge.getStaticLogger().error("处理控制台消息回调时出错", ex);
-                            return null; // 返回null以避免异常传播
-                        });
+                    client.sendAndWaitForCallbackAsync(packet, com.google.gson.JsonObject.class);
                 }
                 
                 // 在主线程上发送反馈消息
@@ -381,10 +352,7 @@ public class CommandHandler {
                 source.getServer().execute(() -> {
                     source.sendSuccess(() -> Component.literal("§c消息发送失败: " + e.getMessage()), false);
                 });
-                // 添加详细的错误日志，包括完整堆栈信息
-                Easybot_forge.getStaticLogger().error("发送消息时出错: " + e.getClass().getName() + ", 消息: " + e.getMessage(), e);
-                // 记录关键变量信息
-                Easybot_forge.getStaticLogger().error("调试信息 - player: " + finalPlayerName + ", client: " + (client != null ? "connected: " + client.isConnected() : "null"));
+                Easybot_forge.getStaticLogger().error("发送消息时出错", e);
             }
         });
 
@@ -443,12 +411,8 @@ public class CommandHandler {
                 packet.setPlayer(playerInfoWithRaw);
                 packet.setMessage(message);
                 
-                // 发送数据包并处理返回的Future
-                client.sendAndWaitForCallbackAsync(packet, com.google.gson.JsonObject.class)
-                    .exceptionally(ex -> {
-                        Easybot_forge.getStaticLogger().error("处理跨服消息回调时出错", ex);
-                        return null; // 返回null以避免异常传播
-                    });
+                // 发送数据包
+                client.sendAndWaitForCallbackAsync(packet, com.google.gson.JsonObject.class);
                 
                 Easybot_forge.getStaticLogger().info("玩家 {} 发送跨服消息: {}", playerName, message);
                 // 在主线程上发送反馈消息
@@ -460,10 +424,7 @@ public class CommandHandler {
                 player.getServer().execute(() -> {
                     player.sendSystemMessage(Component.literal("§c跨服消息发送失败: " + e.getMessage()));
                 });
-                // 添加详细的错误日志，包括完整堆栈信息
-                Easybot_forge.getStaticLogger().error("发送跨服消息时出错: " + e.getClass().getName() + ", 消息: " + e.getMessage(), e);
-                // 记录关键变量信息
-                Easybot_forge.getStaticLogger().error("调试信息 - player: " + playerName + ", client: " + (client != null ? "connected: " + client.isConnected() : "null"));
+                Easybot_forge.getStaticLogger().error("发送跨服消息时出错", e);
             }
         });
 
