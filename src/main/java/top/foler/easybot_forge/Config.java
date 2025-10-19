@@ -32,6 +32,10 @@ public class Config {
             .comment("绑定成功消息")
             .define("message.bind_success", "[!] 绑定 #account (#name) 成功!");
 
+    public static final ForgeConfigSpec.ConfigValue<String> BIND_START_MESSAGE = BUILDER
+            .comment("绑定开始消息")
+            .define("message.bind_start", "§a请使用绑定码 #code (有效期 #time 分钟) 在 EasyBot 界面完成绑定");
+
     public static final ForgeConfigSpec.BooleanValue EVENT_ENABLE_SUCCESS_EVENT = BUILDER
             .comment("启用绑定成功事件")
             .define("event.enable_success_event", false);
