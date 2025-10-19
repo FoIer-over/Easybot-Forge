@@ -2,16 +2,17 @@ package top.foler.easybot_forge.bridge.packet;
 
 import com.google.gson.annotations.SerializedName;
 
-public class SyncMessagePacket extends PacketWithCallBackId {
+/**
+ * 跨服消息数据包
+ */
+public class SendCrossServerMessagePacket extends PacketWithCallBackId {
     @SerializedName("player")
     private PlayerInfoWithRaw player;
     @SerializedName("message")
     private String message;
-    @SerializedName("use_command")
-    private boolean useCommand;
     
-    public SyncMessagePacket(){
-        setOperation("SYNC_MESSAGE");
+    public SendCrossServerMessagePacket() {
+        setOperation("CROSS_SERVER_MESSAGE");
         // 设置正确的opCode
         setOpCode(top.foler.easybot_forge.bridge.OpCode.Packet);
     }
@@ -30,13 +31,5 @@ public class SyncMessagePacket extends PacketWithCallBackId {
 
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    public boolean isUseCommand() {
-        return useCommand;
-    }
-
-    public void setUseCommand(boolean useCommand) {
-        this.useCommand = useCommand;
     }
 }
